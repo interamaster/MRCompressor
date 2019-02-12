@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">MRCompressor</string>
+    <string name="permission_alert_dialog_title">PERMISO SMS</string>
+    <string name="permission_dialog_message">O LO DAS O NO FUNCIONA..TU MISMO</string>
+    <string name="action_ok">OK</string>
+</resources>
