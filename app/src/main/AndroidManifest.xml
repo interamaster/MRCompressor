@@ -18,7 +18,9 @@
         android:theme="@style/AppTheme">
 
 
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -26,35 +28,35 @@
             </intent-filter>
         </activity>
 
-        //para hacerlo auto boot
-        <receiver android:name=".BootCompletedIntentReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        <!--para hacerlo auto boot -->
+         <receiver android:name=".BootCompletedIntentReceiver">
+             <intent-filter>
+                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+             </intent-filter>
+         </receiver>
 
-        //para smsleer
-        <receiver
-            android:name=".SmsBroadcastReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter android:priority="1000">
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
+        <!--para smsleer -->
+         <receiver
+             android:name=".SmsBroadcastReceiver"
+             android:enabled="true"
+             android:exported="true">
+             <intent-filter android:priority="1000">
+                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+             </intent-filter>
+         </receiver>
 
-        //para desenchufado
+        <!--para desenchufado -->
 
-        <receiver android:name=".PhoneChargerConnectedListener">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
-                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
-            </intent-filter>
-        </receiver>
-
-
-    </application>
+         <receiver android:name=".PhoneChargerConnectedListener">
+             <intent-filter>
+                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+             </intent-filter>
+         </receiver>
 
 
+     </application>
 
-</manifest>
+
+
+ </manifest>
