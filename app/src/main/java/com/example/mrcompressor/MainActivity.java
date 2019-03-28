@@ -1,17 +1,20 @@
 package com.example.mrcompressor;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.provider.Settings;
@@ -24,9 +27,11 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.lzyzsd.circleprogress.CircleProgress;
 
@@ -34,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     //v01 creada logica de enviar y recibir sms y de detectar enchufado y desenchufado esto funiona ok incluso fuera app y hecha auto boot!!
     //v02 añadida detcetaion vibtatio con gauge wue o representa y valor minimo del gauge a elegir en seekbar
+    //V03 AÑADIDO ENVIO EN BACKGROUND DE EMAIL Y AÑLGO DE INTERFAZ..PTE
+
 
     private static final int SMS_PERMISSION_CODE = 0;
     private static final String TAG = "MainAc sensores";
@@ -73,10 +80,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static   String  EXTRA_SMSCONFIGURADO="639689367";
 
 
+    //PARA PODER HIDE LA PROGRESSBAR DESDE EL ASYNTASK
+
+
+    private ProgressDialog progressDialog;
+
+
+    private boolean SendEmailOK=false;//PARASABER SI SE MANDO OK  O NO EL AUTO EMAIL
+
+
+    //para los edittext
+
+
+    private EditText srn,email,hospname,otherappname;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+
+        //los edittext
+
+
+        srn = (EditText) findViewById(R.id.srntext);
+        email = (EditText) findViewById(R.id.emailtext);
+        hospname = (EditText) findViewById(R.id.hospnameedittext);
+        otherappname = (EditText) findViewById(R.id.otherapppackagename);
+
+
 
         //el gauge:
 
@@ -298,5 +333,182 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////sensor listener//////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////auto email//////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    private void empiezagiraprogressbar(){
+
+
+        progressDialog = new ProgressDialog(MainActivity.this,  R.style.AppTheme);
+        progressDialog.setIndeterminate(true);
+        progressDialog.setMessage("Generando  email encriptado para enviar a servidor,por favor envie el email a continuacion... en 24h recibira por email su contraseña.");
+        progressDialog.show();
+
+
+    }
+
+
+    public void SendEmailInBackgroundMio(){
+
+
+        String srntopass = srn.getText().toString();
+        String emailtopass = email.getText().toString();
+        String hospitalnametopass = hospname.getText().toString();
+        String otherappnametoreadnotistopass = otherappname.getText().toString();
+
+
+
+
+
+
+        //los Valores on correctos asi que los guardamos en le SharedPreference!!!
+
+
+        SharedPreferences pref = getSharedPreferences(SmsHelper.PREFS_NAME, Context.MODE_PRIVATE);
+
+        // We need an editor object to make changes
+        SharedPreferences.Editor edit = pref.edit();
+
+        // Set/Store data
+        edit.putString(SmsHelper.PREF_SRN, srntopass);
+        edit.putString(SmsHelper.PREF_HOSPNAME, hospitalnametopass);
+        edit.putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS, otherappnametoreadnotistopass);
+        edit.putString(SmsHelper.PREF_EMAIL, emailtopass);
+        edit.putString(SmsHelper.PREF_VALUEVIBRATENOW, "33%");//TODO poner valor real
+        edit.putString(SmsHelper.PREF_VALUETRIGGERVIBRATE, "11%");//TODO poner valor real
+
+
+        edit.putBoolean(SmsHelper.PREF_BOOL_ALARMADEFALLO, false);//TODO  poner valor real
+
+
+
+        // Commit the changes
+        edit.commit();
+
+
+        //empieza a girara spinnerr
+
+
+       // empiezagiraprogressbar();
+
+
+        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
+
+        //new Email::
+
+        String[] toArr = {"interamaster@gmail.com"};
+
+        m.setTo(toArr);
+        m.setFrom("icas.generico@gmail.com");
+        m.setSubject("AVISO COMPRESOR PARADO!!");
+        m.setBody("dasdsd");
+        /*
+        m.setBody("Gracias por enviarnos su email estos son sus datos:\n" + name + "\n" + email + "\n" + telefono + "\n" + comunidad + "\n signature:" + "Start ENCRYPTED:" +
+                "%%ADFSDLIFSDLJKHDLKASHDLKHSLKJDHLSDHLKASDKJSKDJJDKJKLDLSKAJDLKAJSDKJLDJLKSJDLKAJSDLKSJADLKJASLDJASKDKJDLKJERIUFH" +
+                "KLJHFDKHGJKFHKJHGKJHJKFJKDFHGKJHDFKJGHKJDFHGKJFHJKHJFGKJHFDKJGHKJFDHGJKFHGKJDKHGDFKHGJKFDHGKSHFJGHDFSKGKJFDHGKFH" +
+                " DSADASKDJKASJDLKAJDLKJSALKDJLKJKDLJSALKDJASLKDJLKASDJLKSDJKLSJDLKASJDLKJSLKJDLKJDDSJLKADJSLDSJAKSDKLDSLJ" +
+                "DNSDJLKAJJKVJKVSDIOUFISODUOIFSJKLKDLSFJLKSDJFLKDSJFKLJSDLKFJKLDSJFLKSJDFLKJSDLKFJKLDJFLKSDJFKLJSDFKLJSDKLFJSDKLF" +"\n \n \n " +
+                " el password deberia ser ghfincas+2 utimos digitos del imei"+"\n \n osea: ghfincas");
+
+                */
+        try {
+            // m.addAttachment("/sdcard/bday.jpg");
+            if(m.send()) {
+                //Toast.makeText(this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a true y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=true;
+
+            } else {
+
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a false  y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=false;
+
+
+                //Toast.makeText(this, "Email was not sent.", Toast.LENGTH_LONG).show();
+                // Toast.makeText(this, "Lo siento su movil no esta preparado para mandar emails de manera autoamtica vams ahcerlo de manera manual" +
+                //   "", Toast.LENGTH_SHORT).show();
+
+              //  ManualEmailSiFallaAutomatico();
+
+            }
+        } catch(Exception e) {
+            Log.e("MailApp", "Could not send email", e);
+
+            //lo mandamos manual
+
+            SendEmailOK=false;
+
+
+           // ManualEmailSiFallaAutomatico();
+        }
+
+
+
+
+
+    }
+
+    public void SendEmailtestMio(View view) {
+
+
+
+
+        new SendMail().execute("");
+
+    }
+
+
+    private class SendMail extends AsyncTask<String, Integer, Void> {
+
+
+        protected void onProgressUpdate() {
+            //called when the background task makes any progress
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+            SendEmailInBackgroundMio();
+            return null;
+        }
+
+        protected void onPreExecute() {
+            //called before doInBackground() is started
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            if (SendEmailOK) {
+                //funciono ok
+
+               // progressDialog.hide();
+                Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
+
+                //finish();
+
+
+            }
+
+            else {
+
+                //ha fallado
+
+                Toast.makeText(MainActivity.this, "Email fallo!!!", Toast.LENGTH_LONG).show();
+            }
+
+
+        }
+    }
 
 }
