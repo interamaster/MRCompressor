@@ -23,7 +23,7 @@
             android:id="@+id/seekBar"
             android:layout_width="150dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="100dp"
+            android:layout_marginTop="120dp"
             android:max="100"
             android:progress="25" />
 
@@ -33,14 +33,14 @@
             android:layout_height="200dp"
             android:layout_marginLeft="150dp"
             custom:circle_progress="0"
-            android:onClick="SendEmailtestMio"/>
+            />
 
         <TextView
             android:id="@+id/valorseekbar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
-            android:text="0%"
+            android:text="25%"
             android:textSize="50dp" />
     </RelativeLayout>
 
@@ -64,7 +64,8 @@
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:inputType="textPersonName"
-                android:text="enter your email!!!" />
+                android:hint="enter your email!!!"
+                android:imeOptions="actionDone"/>
 
 
         </RelativeLayout>
@@ -84,13 +85,14 @@
                 android:text="SRN" />
 
             <EditText
-                android:layout_marginTop="20dp"
                 android:id="@+id/srntext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
                 android:ems="10"
-                android:inputType="textPersonName"
-                android:text="enter your SRN of this MR!!" />
+                android:inputType="number"
+                android:hint="enter your SRN of this MR!!"
+                android:imeOptions="actionDone"/>
 
 
         </RelativeLayout>
@@ -114,7 +116,8 @@
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:inputType="textPersonName"
-                android:text="enter the name of this MR!!!" />
+                android:hint="enter the name of this MR!!!"
+                android:imeOptions="actionDone"/>
 
 
         </RelativeLayout>
@@ -133,12 +136,13 @@
                 android:id="@+id/chooseapptext"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select the app to get notify data" />
+                android:hint="Select the app to get notify data" />
 
             <RadioGroup
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checkedButton="@+id/radioButtonhangout"
+                android:id="@+id/radiogrupochooseapk"
                 android:orientation="horizontal">
 
                 <RadioButton
@@ -146,33 +150,26 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:onClick="onRadioButtonClicked"
                     android:text="SMS" />
 
-                <RadioButton
-                    android:id="@+id/radioButtonWhatsapp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="WHATSAPP" />
 
-                <RadioButton
-                    android:id="@+id/radioButtonTelegram"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="TELEGRAM" />
+
+
 
                 <RadioButton
                     android:id="@+id/radioButtonhangout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:onClick="onRadioButtonClicked"
                     android:text="HANGOUT" />
                 <RadioButton
                     android:id="@+id/radioButtonotros"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:onClick="onRadioButtonClicked"
                     android:text="OTHER" />
 
             </RadioGroup>
@@ -196,7 +193,9 @@
                     android:layout_height="wrap_content"
                     android:ems="10"
                     android:inputType="textPersonName"
-                    android:text="Enter other app packagename" />
+                    android:hint="Enter other app packagename"
+                    android:imeOptions="actionDone"
+                    />
 
 
             </RelativeLayout>

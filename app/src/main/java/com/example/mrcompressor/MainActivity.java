@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -17,18 +18,24 @@ import android.hardware.SensorManager;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,13 +46,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     //v01 creada logica de enviar y recibir sms y de detectar enchufado y desenchufado esto funiona ok incluso fuera app y hecha auto boot!!
     //v02 añadida detcetaion vibtatio con gauge wue o representa y valor minimo del gauge a elegir en seekbar
-    //V03 AÑADIDO ENVIO EN BACKGROUND DE EMAIL Y AÑLGO DE INTERFAZ..PTE
+    //V03 AÑADIDO ENVIO EN BACKGROUND DE EMAIL Y ALGO DE INTERFAZ..PTE
+    //v035 CREASDOS ERVICIO DE LEER NPOTIS PTE DE IMPLEMNETAR Y AÑADIDAS SHAREDPREF DE LA MAIN
 
 
-    private static final int SMS_PERMISSION_CODE = 0;
+
+    //PARA EL LOGGING
+    private static final int REQUESTSMS_PERMISSION_CODE = 0;
     private static final String TAG = "MainAc sensores";
 
     //pàra los valores del sms a enviar
+
+
+
+
+    //sharedprefs
+
+    private SharedPreferences mPrefs;
+
 
 
 
@@ -57,7 +75,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
    private SeekBar simpleSeekBar;
 
+   //radiogroup
 
+    private RadioGroup radiogroupchooseapktonotify;
+
+
+
+
+    float ValorVibrationclaculada;
    private  int ValorMinimoVibration;
     // para el sensor
 
@@ -72,12 +97,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private static final int SHAKE_THRESHOLD = 600;
 
-    //para el intnt Extra info
+    //para el intent Extra info
 
-    public static   String  EXTRA_MESSAGE="mensaje";
-    public static   String  EXTRA_TIME="time";
-    public static   String  EXTRA_RMNAME="3T CORDOBA";
-    public static   String  EXTRA_SMSCONFIGURADO="639689367";
+    private String  TextorecibidoService ;
+
 
 
     //PARA PODER HIDE LA PROGRESSBAR DESDE EL ASYNTASK
@@ -102,6 +125,48 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
 
+        //las pref
+
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+
+
+
+        //radiogroup
+
+        radiogroupchooseapktonotify = (RadioGroup) findViewById(R.id.radiogrupochooseapk);
+
+
+        if( mPrefs.getString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"hangout").equals("sms")){
+
+            RadioButton rbmsms=(RadioButton)radiogroupchooseapktonotify.getChildAt(0);
+            rbmsms.setChecked(true);
+
+            //CHEQUEO SMS PERMISION
+
+            /*
+            if (!hasReadSmsPermission()) {
+                showRequestPermissionsInfoAlertDialog();
+            }
+            */
+
+            //OPCION 1
+            showSMSStatePermission();
+
+
+        }
+        else if  ( mPrefs.getString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"hangout").equals("hangout")){
+            RadioButton rbhangout=(RadioButton)radiogroupchooseapktonotify.getChildAt(1);
+            rbhangout.setChecked(true);
+
+        }
+        else if  ( mPrefs.getString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"hangout").equals("otro")){
+            RadioButton rbmotro=(RadioButton)radiogroupchooseapktonotify.getChildAt(2);
+            rbmotro.setChecked(true);
+
+        }
+
+
 
         //los edittext
 
@@ -112,24 +177,192 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         otherappname = (EditText) findViewById(R.id.otherapppackagename);
 
 
+        //mejor los hag focusabel apra que guarden el valor despues de darle al teclado done o de salir:
+
+        //other app nmae
+
+
+
+        ((EditText)findViewById(R.id.otherapppackagename)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,otherappname.getText().toString()).commit();
+                }
+            }
+        });
+
+        otherappname.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,otherappname.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
+        //hosp name:
+
+
+
+        ((EditText)findViewById(R.id.hospnameedittext)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_HOSPNAME,hospname.getText().toString()).commit();
+                }
+            }
+        });
+
+        hospname.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_HOSPNAME,hospname.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
+
+        //email;
+
+
+
+        ((EditText)findViewById(R.id.emailtext)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_EMAIL,email.getText().toString()).commit();
+                }
+            }
+        });
+
+        email.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_EMAIL,email.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
+
+
+
+
+
+
+
+        //srn:
+
+
+        ((EditText)findViewById(R.id.srntext)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_SRN,srn.getText().toString()).commit();
+                }
+            }
+        });
+
+        srn.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_SRN,srn.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
 
         //el gauge:
 
         circleProgress = (CircleProgress) findViewById(R.id.circle_progress);
         circleProgress.setMax(150);
+        circleProgress.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                SendEmailtestMio();
+
+                return true;
+            }
+        }) ;
+
 
 
 
 
         //el seekbar
 
+        //initial value =25%..no que lo recupere de la pref mas abjo
+
+       // ValorMinimoVibration=25;
+
           simpleSeekBar=(SeekBar) findViewById(R.id.seekBar); // initiate the progress bar
         final TextView ValorSeekBar=(TextView)findViewById(R.id.valorseekbar);
+
+        //le damos su valor guardado
+
+        //recuperamos vzlores de campos si ya existian
+
+
+        srn.setText(mPrefs.getString(SmsHelper.PREF_SRN,null));
+        email.setText(mPrefs.getString(SmsHelper.PREF_EMAIL,null));
+        hospname.setText(mPrefs.getString(SmsHelper.PREF_HOSPNAME,null));
+        otherappname.setText(mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,null));
+
+        ValorMinimoVibration=mPrefs.getInt(SmsHelper.PREF_VALUETRIGGERVIBRATE,25);
+
+        Log.d("trigger en: ",String.valueOf( ValorMinimoVibration));
+
+
+
+
+
+        ValorSeekBar.setText(String.valueOf(ValorMinimoVibration)+"%");
+        simpleSeekBar.setProgress(ValorMinimoVibration);
+
 
 
         // perform seek bar change listener event used for getting the progress value
         simpleSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int progressChangedValue = 0;
+            int progressChangedValue = 25;
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 progressChangedValue = progress;
@@ -145,6 +378,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         Toast.LENGTH_SHORT).show();*/
 
                 ValorMinimoVibration=progressChangedValue;
+                //y lo guardamos
+
+                mPrefs.edit().putInt(SmsHelper.PREF_VALUETRIGGERVIBRATE,progressChangedValue).commit();
+
                 ValorSeekBar.setText(String.valueOf(ValorMinimoVibration)+"%");
 
             }
@@ -162,18 +399,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 
-        //CHEQUEO SMS PERMISION
-
-        if (!hasReadSmsPermission()) {
-            showRequestPermissionsInfoAlertDialog();
-        }
-
-
-
-        EXTRA_TIME="mensaje cambiado px si";
-
-
-
 
         //registro de sensor y variables de sensores
 
@@ -181,9 +406,150 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
 
+
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////RECIBIR TEXT DESDE EL  SERVICE DE LEER NOTIS//////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        //FORMA 1 PASADO EN EL INTENT EXTRAS
+
+        Bundle extrasfromService = getIntent().getExtras();
+        if(extrasfromService !=null){
+
+
+
+
+
+            //METODO SACANDO EL EXTRA DE CADA COSA
+
+
+
+            //CharSequence notificationText = extrasfromService.getCharSequence(Notification.EXTRA_TEXT);
+
+            CharSequence notificationText = extrasfromService.getCharSequence("TEXTORECIBIDO");
+            // CharSequence notificationSubText = extrasfromService.getCharSequence(Notification.EXTRA_SUB_TEXT);//no manda anda en whastapp akl menos
+
+
+
+            if (notificationText !=null ){
+
+                TextorecibidoService.equals(notificationText);
+
+                //enviamos email con los datos si cumple Phchksms o phchksms
+
+                if (TextorecibidoService.equals(SmsHelper.SMS_CONDITION)|| TextorecibidoService.equals(SmsHelper.SMS_CONDITION2)){
+
+                    SendEmailInBackgroundMio();
+                }
+
+
+                //si es PHSETTTRIGER XX
+
+
+                if (TextorecibidoService.equals(SmsHelper.SMS_CONDITION3)){
+
+                    SendEmailInBackgroundMio();
+                }
+
+
+
+            }
+
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
     }
 
-     /**
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////radiobutton listener//////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    public void onRadioButtonClicked(View view) {
+
+        boolean marcado = ((RadioButton) view).isChecked();
+
+        switch (view.getId()) {
+            case R.id.radioButtonhangout:
+                if (marcado) {
+                    //actualizamos el valor guardado:
+
+                    mPrefs.edit().putString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"hangout").commit();
+
+                    //y el valor de al pp a read notis
+
+                    mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"com.google.android.talk").commit();
+
+
+
+
+                    //mostrarParticular(false);
+                }
+                break;
+
+            case R.id.radioButtonsms:
+                if (marcado) {
+
+
+                    mPrefs.edit().putString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"sms").commit();
+
+                    //y el valor de al pp a read notis
+
+                    mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none").commit();
+
+                    //CHEQUEO SMS PERMISION
+
+
+                    /*
+                    if (!hasReadSmsPermission()) {
+                        showRequestPermissionsInfoAlertDialog();
+                    }
+                        */
+
+                    //OPCION 1
+
+                    showSMSStatePermission();
+
+
+                }
+                break;
+
+            case R.id.radioButtonotros:
+                if (marcado) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"otro").commit();
+
+                    //y el valor de al pp a read notis
+
+                    mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,otherappname.getText().toString()).commit();
+
+
+
+                }
+                break;
+        }
+    }
+
+
+    /**
      * Check if we have SMS permission
      */
     public boolean isSmsPermissionGranted() {
@@ -193,7 +559,77 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     /**
      * Runtime permission
      */
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////OPCION 1//////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void showSMSStatePermission() {
+        int permissionCheck = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECEIVE_SMS);
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECEIVE_SMS)) {
+                showExplanation("Permission Needed", "SMS", Manifest.permission.RECEIVE_SMS, REQUESTSMS_PERMISSION_CODE);
+            } else {
+                requestPermission(Manifest.permission.RECEIVE_SMS, RECEIVER_VISIBLE_TO_INSTANT_APPS);
+            }
+        } else {
+            Toast.makeText(MainActivity.this, "Permission (already) Granted!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String permissions[],
+            int[] grantResults) {
+        switch (requestCode) {
+            case REQUESTSMS_PERMISSION_CODE:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(MainActivity.this, "Permission Granted!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+        }
+    }
+
+    private void showExplanation(String title,
+                                 String message,
+                                 final String permission,
+                                 final int permissionRequestCode) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        requestPermission(permission, permissionRequestCode);
+                    }
+                });
+        builder.create().show();
+    }
+
+    private void requestPermission(String permissionName, int permissionRequestCode) {
+        ActivityCompat.requestPermissions(this,
+                new String[]{permissionName}, permissionRequestCode);
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////OPCION 2 NO FUNCIONA////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     private boolean hasReadSmsPermission() {
+
+
+
+
         return ContextCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(MainActivity.this,
@@ -204,12 +640,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      * Request runtime SMS permission
      */
     private void requestReadAndSendSmsPermission() {
+
+
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_SMS)) {
             // You may display a non-blocking explanation here, read more in the documentation:
             // https://developer.android.com/training/permissions/requesting.html
         }
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
-    }
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, REQUESTSMS_PERMISSION_CODE);
+
+
+        }
+
+
+
 
 
     /**
@@ -224,8 +667,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         builder.setPositiveButton(R.string.action_ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
+
                 requestReadAndSendSmsPermission();
+                dialog.dismiss();
             }
         });
         builder.show();
@@ -276,7 +720,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 float dify=50*Math.abs(Math.abs(y)-Math.abs(last_y));
                 float difz=50*Math.abs(Math.abs(z)-Math.abs(last_z));
 
-                float ValorVibrationclaculada=new Float( Math.abs(difx +dify+difz));
+                ValorVibrationclaculada=new Float( Math.abs(difx +dify+difz));
 
 
 
@@ -359,36 +803,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         String srntopass = srn.getText().toString();
         String emailtopass = email.getText().toString();
         String hospitalnametopass = hospname.getText().toString();
-        String otherappnametoreadnotistopass = otherappname.getText().toString();
+        String appnametoreadnotistopass = mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none");
 
 
 
 
 
 
-        //los Valores on correctos asi que los guardamos en le SharedPreference!!!
-
-
-        SharedPreferences pref = getSharedPreferences(SmsHelper.PREFS_NAME, Context.MODE_PRIVATE);
-
-        // We need an editor object to make changes
-        SharedPreferences.Editor edit = pref.edit();
-
-        // Set/Store data
-        edit.putString(SmsHelper.PREF_SRN, srntopass);
-        edit.putString(SmsHelper.PREF_HOSPNAME, hospitalnametopass);
-        edit.putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS, otherappnametoreadnotistopass);
-        edit.putString(SmsHelper.PREF_EMAIL, emailtopass);
-        edit.putString(SmsHelper.PREF_VALUEVIBRATENOW, "33%");//TODO poner valor real
-        edit.putString(SmsHelper.PREF_VALUETRIGGERVIBRATE, "11%");//TODO poner valor real
-
-
-        edit.putBoolean(SmsHelper.PREF_BOOL_ALARMADEFALLO, false);//TODO  poner valor real
-
-
-
-        // Commit the changes
-        edit.commit();
 
 
         //empieza a girara spinnerr
@@ -402,21 +823,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //new Email::
 
-        String[] toArr = {"interamaster@gmail.com"};
+        //String[] toArr = {"interamaster@gmail.com"};
+
+        String[] toArr = {emailtopass};
 
         m.setTo(toArr);
         m.setFrom("icas.generico@gmail.com");
-        m.setSubject("AVISO COMPRESOR PARADO!!");
-        m.setBody("dasdsd");
-        /*
-        m.setBody("Gracias por enviarnos su email estos son sus datos:\n" + name + "\n" + email + "\n" + telefono + "\n" + comunidad + "\n signature:" + "Start ENCRYPTED:" +
-                "%%ADFSDLIFSDLJKHDLKASHDLKHSLKJDHLSDHLKASDKJSKDJJDKJKLDLSKAJDLKAJSDKJLDJLKSJDLKAJSDLKSJADLKJASLDJASKDKJDLKJERIUFH" +
-                "KLJHFDKHGJKFHKJHGKJHJKFJKDFHGKJHDFKJGHKJDFHGKJFHJKHJFGKJHFDKJGHKJFDHGJKFHGKJDKHGDFKHGJKFDHGKSHFJGHDFSKGKJFDHGKFH" +
-                " DSADASKDJKASJDLKAJDLKJSALKDJLKJKDLJSALKDJASLKDJLKASDJLKSDJKLSJDLKASJDLKJSLKJDLKJDDSJLKADJSLDSJAKSDKLDSLJ" +
-                "DNSDJLKAJJKVJKVSDIOUFISODUOIFSJKLKDLSFJLKSDJFLKDSJFKLJSDLKFJKLDSJFLKSJDFLKJSDLKFJKLDJFLKSDJFKLJSDFKLJSDKLFJSDKLF" +"\n \n \n " +
-                " el password deberia ser ghfincas+2 utimos digitos del imei"+"\n \n osea: ghfincas");
+        m.setSubject("RESPUESTA ENVIADA A SU PETICION!!");
+       // m.setBody("dasdsd");
 
-                */
+        m.setBody("MRCOMPRESSOR IS RUNNING:\n" +"EQUIPO SRN: "+ srntopass + "\n NOMBRE" + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+                "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
+                " (C) JOSE RAMON DELGADO 2019");
+
+
         try {
             // m.addAttachment("/sdcard/bday.jpg");
             if(m.send()) {
@@ -458,7 +878,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    public void SendEmailtestMio(View view) {
+    public void SendEmailtestMio() {
 
 
 
@@ -466,6 +886,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         new SendMail().execute("");
 
     }
+
 
 
     private class SendMail extends AsyncTask<String, Integer, Void> {

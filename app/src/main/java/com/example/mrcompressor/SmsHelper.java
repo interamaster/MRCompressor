@@ -11,6 +11,7 @@ public class SmsHelper {
 
     public static final String SMS_CONDITION = "Phchksms";
     public static final String SMS_CONDITION2 = "phchksms";
+    public static final String SMS_CONDITION3 = "PHSETTTRIGER";
 
 
 
@@ -28,6 +29,7 @@ public class SmsHelper {
     public static final String PREF_VALUETRIGGERVIBRATE = "valuetriggervibtrateset";
     public static final String PREF_NAMEAPPTOREADNOTIFICACTIONS = "nameapptoreadnotif";
     public static final String PREF_BOOL_ALARMADEFALLO ="false";
+    public static final String PREF_RADIOBUTTONVALUEAPPTOREADNOTIS="radiobuttonapptoreadnotis";
 
     public static boolean isValidPhoneNumber(String phoneNumber) {
         return android.util.Patterns.PHONE.matcher(phoneNumber).matches();
