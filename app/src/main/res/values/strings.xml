@@ -3,4 +3,8 @@
     <string name="permission_alert_dialog_title">PERMISO SMS</string>
     <string name="permission_dialog_message">O LO DAS O NO FUNCIONA..TU MISMO</string>
     <string name="action_ok">OK</string>
+    <string name="notification_listener_launch">Ahora te saldrá una ventana con los ajustes de Notificaciones, si quieres que esto deje de funcionar simplemente deshabilitame.</string>
+    <string name="notification_listener_warning">Si pulsas OK se abrirá la ventana de Ajuste de Notificaciones.Para que esta Aplicación funcione debes marcar MRCOMPRESSOR.
+        Android te va avisar de que leer las notificaciones puede capturar datos privados,pero es la única manera de que funcione y MRCOMPRESSOR nunca leera el contenido de ellas, solo te los pondra a ti.</string>
+
 </resources>

@@ -40,6 +40,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.mrcompressor.helpers.NotificationServiceHelper;
 import com.github.lzyzsd.circleprogress.CircleProgress;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //v02 añadida detcetaion vibtatio con gauge wue o representa y valor minimo del gauge a elegir en seekbar
     //V03 AÑADIDO ENVIO EN BACKGROUND DE EMAIL Y ALGO DE INTERFAZ..PTE
     //v035 CREASDOS ERVICIO DE LEER NPOTIS PTE DE IMPLEMNETAR Y AÑADIDAS SHAREDPREF DE LA MAIN
+    //V05 LEE YA LOS HANGOUT PERO DA CRASH..
 
 
 
@@ -59,11 +61,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+    //para ssaber sie le notif servcie esta runnning y habilitado
+
+    private boolean mServiceActive;
 
     //sharedprefs
 
     private SharedPreferences mPrefs;
 
+
+    //para el intnt Extra info
+
+    public static   String  EXTRA_MESSAGE="mensaje";
+    public static   String  EXTRA_TIME="time";
+    public static   String  EXTRA_RMNAME="3T CORDOBA";
+    public static   String  EXTRA_SMSCONFIGURADO="639689367";
 
 
 
@@ -152,6 +164,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             //OPCION 1
             showSMSStatePermission();
+
+
+
+            //CHEQUEO ACCESOA ALEER NOTIFIS
+
+
+            initializeService();
+
+
 
 
         }
@@ -450,7 +471,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (TextorecibidoService.equals(SmsHelper.SMS_CONDITION3)){
 
-                    SendEmailInBackgroundMio();
+
+
+                    //sacamos el valor:
+
+                    String textfiltrado=removeWord(TextorecibidoService,"PHSETTTRIGER");
+
+                    Log.d(" texto filtrado es: ",textfiltrado);
+
+                    int myNum = 0;
+
+                    try {
+                        myNum = Integer.parseInt(textfiltrado );
+                    } catch(NumberFormatException nfe) {
+                        System.out.println("Could not parse " + nfe);
+                    }
+
+
+                    ValorMinimoVibration=myNum;
+                    //y lo guardamos
+
+                    mPrefs.edit().putInt(SmsHelper.PREF_VALUETRIGGERVIBRATE,myNum).commit();
+
+                    ValorSeekBar.setText(String.valueOf(ValorMinimoVibration)+"%");
+
+
+                    SendEmailInBackgroundMio();//
+
                 }
 
 
@@ -476,6 +523,88 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////CHEQUEO ACCESOS A NOTFICACIOENS!!!//////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    private void initializeService() {
+
+        checkForRunningService();
+
+
+                if (mServiceActive) {
+                    // showServiceDialog(R.string.notification_listener_launch);
+                    showServiceDialog(R.string.notification_listener_launch);
+                } else {
+                    // showServiceDialog(R.string.notification_listener_warning);
+                    showServiceDialog(R.string.notification_listener_warning);
+                }
+
+
+            }
+
+
+
+
+
+    private boolean checkForRunningService() {
+        mServiceActive = NotificationServiceHelper.isServiceRunning(this);
+        if (mServiceActive) {
+            return true;
+
+        } else {
+
+            return false;
+
+        }
+    }
+
+    private void showServiceDialog(int message) {
+        new android.app.AlertDialog.Builder(this)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface alertDialog, int id) {
+                        alertDialog.cancel();
+                        startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                    }
+                })
+                .show();
+    }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////filtrar el texto recibido//////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+    public static String removeWord(String string, String word)
+    {
+
+        // Check if the word is present in string
+        // If found, remove it using removeAll()
+        if (string.contains(word)) {
+
+            // To cover the case
+            // if the word is at the
+            // beginning of the string
+            // or anywhere in the middle
+            String tempWord = word + " ";
+            string = string.replaceAll(tempWord, "");
+
+            // To cover the edge case
+            // if the word is at the
+            // end of the string
+            tempWord = " " + word;
+            string = string.replaceAll(tempWord, "");
+        }
+
+        // Return the resultant string
+        return string;
+    }
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -726,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                // absLabel.setText(String.format("ABS: %+2.0f ", (float)Math.round(ValorVibrationclaculada)));
 
-                Log.d( "ValorVibrationcal:",String.format("ABS: %+2.0f ", (float)Math.round(ValorVibrationclaculada)));
+                //Log.d( "ValorVibrationcal:",String.format("ABS: %+2.0f ", (float)Math.round(ValorVibrationclaculada)));
 
                 circleProgress.setProgress(Math.round(ValorVibrationclaculada));
 
@@ -740,7 +869,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (ValorVibrationclaculada<ValorMinimoVibration){
 
-                    Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration));
+                  //  Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration));
 
                     circleProgress.setFinishedColor(Color.RED);
 
@@ -829,10 +958,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         m.setTo(toArr);
         m.setFrom("icas.generico@gmail.com");
-        m.setSubject("RESPUESTA ENVIADA A SU PETICION!!");
+        m.setSubject("MRCOMPRESSOR "+hospitalnametopass);
        // m.setBody("dasdsd");
 
-        m.setBody("MRCOMPRESSOR IS RUNNING:\n" +"EQUIPO SRN: "+ srntopass + "\n NOMBRE" + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+        m.setBody("MRCOMPRESSOR IS RUNNING:\n" +"EQUIPO SRN: "+ srntopass + "\nNOMBRE: " + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
                 "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
                 " (C) JOSE RAMON DELGADO 2019");
 

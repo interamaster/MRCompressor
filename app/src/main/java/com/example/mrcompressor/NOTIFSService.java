@@ -125,6 +125,37 @@ public class NOTIFSService extends NotificationListenerService {
                 Log.i(TAG, key + "=" + sbn.getNotification().extras.get(key));
             }
 
+/*
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: ID:0
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: Posted by:com.google.android.talk
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: tickerText:jose ramon delgado: Kfkdkd
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.title=jose ramon delgado
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.hiddenConversationTitle=null
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.subText=null
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.car.EXTENSIONS=Bundle[mParcelledData.dataSize=1736]
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.template=android.app.Notification$MessagingStyle
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.showChronometer=false
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.icon=2130839035
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.text=Kfkdkd
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.progress=0
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.progressMax=0
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.selfDisplayName=You
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.appInfo=ApplicationInfo{47534ed com.google.android.talk}
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.messages=[Landroid.os.Parcelable;@855ef22
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.showWhen=true
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.largeIcon=android.graphics.Bitmap@1bf5db3
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.messagingStyleUser=Bundle[mParcelledData.dataSize=148]
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.infoText=null
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.wearable.EXTENSIONS=Bundle[mParcelledData.dataSize=1680]
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.progressIndeterminate=false
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.remoteInputHistory=null
+2019-04-05 11:34:24.710 9248-9248/com.example.mrcompressor I/NOTIFSService: android.isGroupConversation=false
+
+
+
+ */
+
+
 
 //*/
 
