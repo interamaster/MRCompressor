@@ -12,6 +12,12 @@
     <!-- Enviar Email auto -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- detectar si tiene SIM -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- detectar si tiene CONECTION NETWORK-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
 
     <application
         android:allowBackup="true"

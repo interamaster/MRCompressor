@@ -1,6 +1,8 @@
 package com.example.mrcompressor;
 
+
 import android.telephony.SmsManager;
+
 
 public class SmsHelper {
 
@@ -12,7 +14,8 @@ public class SmsHelper {
     public static final String SMS_CONDITION = "Phchksms";
     public static final String SMS_CONDITION2 = "phchksms";
     public static final String SMS_CONDITION3 = "PHSETTRIGGER";
-
+    public static final String INTENTPOWEROFF = "INTENTPOWEROFF";
+    public static final String INTENTPOWERON = "INTENTPOWERON";
 
 
 
@@ -34,6 +37,10 @@ public class SmsHelper {
     public static boolean isValidPhoneNumber(String phoneNumber) {
         return android.util.Patterns.PHONE.matcher(phoneNumber).matches();
     }
+
+
+
+
 
     public static void sendInfoSms(String number, String smsBody) {
         SmsManager smsManager = SmsManager.getDefault();

@@ -14,6 +14,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -23,11 +25,16 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -39,7 +46,7 @@ import android.widget.Toast;
 import com.example.mrcompressor.helpers.NotificationServiceHelper;
 import com.github.lzyzsd.circleprogress.CircleProgress;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener,CountDownAnimation.CountDownListener {
 
     //v01 creada logica de enviar y recibir sms y de detectar enchufado y desenchufado esto funiona ok incluso fuera app y hecha auto boot!!
     //v02 añadida detcetaion vibtatio con gauge wue o representa y valor minimo del gauge a elegir en seekbar
@@ -47,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //v035 CREASDOS ERVICIO DE LEER NPOTIS PTE DE IMPLEMNETAR Y AÑADIDAS SHAREDPREF DE LA MAIN
     //V05 LEE YA LOS HANGOUT PERO DA CRASH..
     //v06 funciona detecion de no vinration y alos 5 min MANDA EMAIL DE FALLO, YA LEE OK LOS HANGOUT Y CAMBIA EL TRIGGER CON MENSAJE PHSETTRIGGER XX
-
+    //v08 ENVIO EMAIL SI POWEROFF O ON Y SMS Y DETECTAR SI TIENE SIM O NO Y SI NO TIENE RED AVISA DE QUE NO MANDARA NADA
 
 
 
@@ -58,6 +65,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //pàra los valores del sms a enviar
 
 
+    //para el countdown animation
+
+    TextView textCountdown;
+
+    CountDownAnimation countDownAnimation;
 
     //Declare timer del teimpo para avisar
     CountDownTimer cTimer = null;
@@ -132,10 +144,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+
+
+
 
 
         //las pref
@@ -144,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-        //CHEQUEO ACCESOA ALEER NOTIFIS
+        //CHEQUEO ACCESO  A EER NOTIFIS
 
 
         initializeService();
@@ -442,6 +461,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if(extrasfromService !=null){
 
 
+            //ANULAMOS EL TIMER SI VIENE DE UNA NOTIFICACION
+
+            cTimer = null;
+
 
 
 
@@ -529,6 +552,64 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
 
 
+                //si es POWEROFF desenchufado
+
+
+                if (Texto1delservice.equals(SmsHelper.INTENTPOWEROFF)){
+
+
+
+                    //TIENE SIM?
+
+                    if (isSimAvailable()) {
+
+                        String hospitalnametopass = hospname.getText().toString();
+
+
+                        SmsHelper.sendInfoSms(MainActivity.EXTRA_SMSCONFIGURADO, "OJO MRCompresor de :" +hospitalnametopass + " DESENCHUFADO!!");
+
+                    }
+
+                    // MANDA EMAIL SIMEPRE
+
+
+
+                    new SendMailPOWEROFF().execute("");
+
+
+
+                }
+
+
+
+                //si es POWERON vuelto a enchufar
+
+
+                if (Texto1delservice.equals(SmsHelper.INTENTPOWERON)){
+
+
+
+                    //TIENE SIM?
+
+                    if (isSimAvailable()) {
+
+                        String hospitalnametopass = hospname.getText().toString();
+
+
+                        SmsHelper.sendInfoSms(MainActivity.EXTRA_SMSCONFIGURADO, "OJO MRCompresor de :" +hospitalnametopass + " VUELTO A ENCHUFAR!!");
+
+                    }
+
+                    // MANDA EMAIL SIMEPRE
+
+
+
+                    new SendMailPOWERON().execute("");
+
+
+
+                }
+
 
             }
 
@@ -551,6 +632,50 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////CHEQUEO network//////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        //https://stackoverflow.com/questions/4238921/detect-whether-there-is-an-internet-connection-available-on-android
+
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////CHEQUEO SIM//////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+    public boolean isSimAvailable() {
+        boolean isAvailable = false;
+        TelephonyManager telMgr = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+        int simState = telMgr.getSimState();
+        switch (simState) {
+            case TelephonyManager.SIM_STATE_ABSENT: //SimState = “No Sim Found!”;
+                break;
+            case TelephonyManager.SIM_STATE_NETWORK_LOCKED: //SimState = “Network Locked!”;
+                break;
+            case TelephonyManager.SIM_STATE_PIN_REQUIRED: //SimState = “PIN Required to access SIM!”;
+                break;
+            case TelephonyManager.SIM_STATE_PUK_REQUIRED: //SimState = “PUK Required to access SIM!”; // Personal Unblocking Code
+                break;
+            case TelephonyManager.SIM_STATE_READY:
+                isAvailable = true;
+                break;
+            case TelephonyManager.SIM_STATE_UNKNOWN: //SimState = “Unknown SIM State!”;
+                break;
+        }
+        return isAvailable;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////CHEQUEO ACCESOS A NOTFICACIOENS!!!//////////////////////////////////////////////////////
@@ -671,6 +796,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (marcado) {
 
 
+                    //chequeo si tinen SIM!!!
+
+                    if (isSimAvailable()){
+
+
                     mPrefs.edit().putString(SmsHelper.PREF_RADIOBUTTONVALUEAPPTOREADNOTIS,"sms").commit();
 
                     //y el valor de al pp a read notis
@@ -688,7 +818,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     //OPCION 1
 
-                    showSMSStatePermission();
+                    showSMSStatePermission();}
+
+
+                    else {
+
+                        //no tiene SIM asi q no se puede cambiar
+
+
+
+                        Toast.makeText(MainActivity.this, "NO TIENES SIM..SOLO HANGOUT!", Toast.LENGTH_SHORT).show();
+
+
+                        RadioButton rbhangout=(RadioButton)radiogroupchooseapktonotify.getChildAt(1);
+                        rbhangout.setChecked(true);
+
+                    }
 
 
                 }
@@ -916,6 +1061,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (cTimer==null){
 
 
+
+
+
+                        if (countDownAnimation==null) {
+
+
+                            //////////////////countdown animation///////////////////////
+
+                            textCountdown = (TextView) findViewById(R.id.textcountdown);
+                            countDownAnimation = new CountDownAnimation(textCountdown, 300);//300 SEGUNDOS
+
+                            //elegimnoms una niamacionmas chula:
+                            Animation scaleAnimation = new ScaleAnimation(1.0f, 0.0f, 1.0f, 0.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                            Animation alphaAnimation = new AlphaAnimation(1.0f, 0.0f);
+                            AnimationSet animationSet = new AnimationSet(false);
+                            animationSet.addAnimation(scaleAnimation);
+                            animationSet.addAnimation(alphaAnimation);
+
+
+                            countDownAnimation.setAnimation(animationSet);
+
+
+                            //añadimos el listener a nosotros
+                            countDownAnimation.setCountDownListener(this);
+                            //y empezamos!!!
+                             countDownAnimation.start();
+                        }
+
+
+                        ////////////////////////////////////////////////
+
+
+
                             cTimer = new CountDownTimer(300000, 1000) {//300 seg= 5min!!
                                 public void onTick(long millisUntilFinished) {
 
@@ -929,8 +1107,40 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                                     if ((millisUntilFinished/1000)%5==0) {
 
-                                        ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+                                        //https://stackoverflow.com/questions/13463691/error-generating-beep-using-tonegenerator-class
+
+                                        final ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
                                         toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200);
+
+
+
+                                        //que espere 2 segundos a borrar el sonido o a aveces no suena
+
+                                        final Handler handler = new Handler();
+                                        handler.postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                //Do something after 2s para que ñpueda leer el sensor
+
+                                                toneG.release();
+                                            }
+                                        }, 2000);
+
+
+
+
+                                        //si no tiene red que avise!!!!
+
+
+                                        if (!isNetworkAvailable()) {
+                                            Toast.makeText(MainActivity.this, "OJO NO HAY RED NO MANDARE NADA!!!!", Toast.LENGTH_SHORT).show();
+
+                                        }
+
+
+
+
+
                                     }
 
 
@@ -972,7 +1182,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                         }
 
+                        //y la animation
 
+                    if (countDownAnimation!=null) {
+
+
+                        countDownAnimation.cancel();
+                        countDownAnimation=null;
+
+
+
+                    }
 
 
                 }
@@ -993,6 +1213,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onPause() {
         super.onPause();
         senSensorManager.unregisterListener(this);
+
+
+        if (cTimer!=null) {
+
+            cTimer.cancel();
+            cTimer = null;
+        }
+
+        if (countDownAnimation!=null) {
+
+
+            countDownAnimation.cancel();
+            countDownAnimation=null;
+
+
+
+        }
+
     }
 
     protected void onResume() {
@@ -1000,11 +1238,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
+    @Override
+    protected void onDestroy() {
+
+
+        if (cTimer!=null) {
+
+            cTimer.cancel();
+            cTimer = null;
+        }
+
+        if (countDownAnimation!=null) {
+
+
+            countDownAnimation.cancel();
+            countDownAnimation=null;
+
+
+
+        }
+
+
+        super.onDestroy();
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////sensor listener//////////////////////////////////////////////////////
+    //////////////////////////////////aniamotr listener//////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
+
+
+    @Override
+    public void onCountDownEnd(CountDownAnimation animation) {
+
+
+
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////auto email//////////////////////////////////////////////////////
@@ -1192,6 +1464,179 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    public void SendEmailInBackgroundMioPOWEROFF(){
+
+
+
+
+        String srntopass = srn.getText().toString();
+        String emailtopass = email.getText().toString();
+        String hospitalnametopass = hospname.getText().toString();
+        String appnametoreadnotistopass = mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none");
+
+
+
+
+
+
+
+
+        //empieza a girara spinnerr
+
+
+        // empiezagiraprogressbar();
+
+
+        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
+
+        //new Email::
+
+        //String[] toArr = {"interamaster@gmail.com"};
+
+        String[] toArr = {emailtopass};
+
+        m.setTo(toArr);
+        m.setFrom("icas.generico@gmail.com");
+        m.setSubject("MRCOMPRESSOR "+hospitalnametopass+" DESENCHUFADO");
+        // m.setBody("dasdsd");
+
+        m.setBody("MRCOMPRESSOR IS RUNNING PERO SE HA DESENCHUFADO:\n" +"EQUIPO SRN: "+ srntopass + "\nNOMBRE: " + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+                "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
+                " (C) JOSE RAMON DELGADO 2019");
+
+
+        try {
+            // m.addAttachment("/sdcard/bday.jpg");
+            if(m.send()) {
+                //Toast.makeText(this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a true y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=true;
+
+            } else {
+
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a false  y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=false;
+
+
+                //Toast.makeText(this, "Email was not sent.", Toast.LENGTH_LONG).show();
+                // Toast.makeText(this, "Lo siento su movil no esta preparado para mandar emails de manera autoamtica vams ahcerlo de manera manual" +
+                //   "", Toast.LENGTH_SHORT).show();
+
+                //  ManualEmailSiFallaAutomatico();
+
+            }
+        } catch(Exception e) {
+            Log.e("MailApp", "Could not send email", e);
+
+            //lo mandamos manual
+
+            SendEmailOK=false;
+
+
+            // ManualEmailSiFallaAutomatico();
+        }
+
+
+
+
+
+    }
+
+
+
+
+
+    public void SendEmailInBackgroundMioPOWERON(){
+
+
+
+
+        String srntopass = srn.getText().toString();
+        String emailtopass = email.getText().toString();
+        String hospitalnametopass = hospname.getText().toString();
+        String appnametoreadnotistopass = mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none");
+
+
+
+
+
+
+
+
+        //empieza a girara spinnerr
+
+
+        // empiezagiraprogressbar();
+
+
+        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
+
+        //new Email::
+
+        //String[] toArr = {"interamaster@gmail.com"};
+
+        String[] toArr = {emailtopass};
+
+        m.setTo(toArr);
+        m.setFrom("icas.generico@gmail.com");
+        m.setSubject("MRCOMPRESSOR "+hospitalnametopass+" VUELTO A ENCHUFAR");
+        // m.setBody("dasdsd");
+
+        m.setBody("MRCOMPRESSOR IS RUNNING Y SE HA VUELTO A ENCHUFAR:\n" +"EQUIPO SRN: "+ srntopass + "\nNOMBRE: " + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+                "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
+                " (C) JOSE RAMON DELGADO 2019");
+
+
+        try {
+            // m.addAttachment("/sdcard/bday.jpg");
+            if(m.send()) {
+                //Toast.makeText(this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a true y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=true;
+
+            } else {
+
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a false  y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=false;
+
+
+                //Toast.makeText(this, "Email was not sent.", Toast.LENGTH_LONG).show();
+                // Toast.makeText(this, "Lo siento su movil no esta preparado para mandar emails de manera autoamtica vams ahcerlo de manera manual" +
+                //   "", Toast.LENGTH_SHORT).show();
+
+                //  ManualEmailSiFallaAutomatico();
+
+            }
+        } catch(Exception e) {
+            Log.e("MailApp", "Could not send email", e);
+
+            //lo mandamos manual
+
+            SendEmailOK=false;
+
+
+            // ManualEmailSiFallaAutomatico();
+        }
+
+
+
+
+
+    }
+
+
+
+
     public void SendEmailtestMio() {
 
 
@@ -1218,8 +1663,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     }
-
-
 
 
 
@@ -1276,8 +1719,110 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+    private class SendMailPOWEROFF extends AsyncTask<String, Integer, Void> {
 
-private class SendMailOK extends AsyncTask<String, Integer, Void> {
+
+        protected void onProgressUpdate() {
+            //called when the background task makes any progress
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+
+
+
+
+
+            SendEmailInBackgroundMioPOWEROFF();
+            return null;
+        }
+
+        protected void onPreExecute() {
+            //called before doInBackground() is started
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            if (SendEmailOK) {
+                //funciono ok
+
+                // progressDialog.hide();
+                Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
+
+                //finish();
+
+
+            }
+
+            else {
+
+                //ha fallado
+
+                Toast.makeText(MainActivity.this, "Email fallo!!!", Toast.LENGTH_LONG).show();
+            }
+
+
+        }
+    }
+
+
+
+    private class SendMailPOWERON extends AsyncTask<String, Integer, Void> {
+
+
+        protected void onProgressUpdate() {
+            //called when the background task makes any progress
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+
+
+
+
+
+            SendEmailInBackgroundMioPOWERON();
+            return null;
+        }
+
+        protected void onPreExecute() {
+            //called before doInBackground() is started
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            if (SendEmailOK) {
+                //funciono ok
+
+                // progressDialog.hide();
+                Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
+
+                //finish();
+
+
+            }
+
+            else {
+
+                //ha fallado
+
+                Toast.makeText(MainActivity.this, "Email fallo!!!", Toast.LENGTH_LONG).show();
+            }
+
+
+        }
+    }
+
+
+
+
+    private class SendMailOK extends AsyncTask<String, Integer, Void> {
 
 
         protected void onProgressUpdate() {
