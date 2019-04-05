@@ -11,7 +11,7 @@ public class SmsHelper {
 
     public static final String SMS_CONDITION = "Phchksms";
     public static final String SMS_CONDITION2 = "phchksms";
-    public static final String SMS_CONDITION3 = "PHSETTTRIGER";
+    public static final String SMS_CONDITION3 = "PHSETTRIGGER";
 
 
 

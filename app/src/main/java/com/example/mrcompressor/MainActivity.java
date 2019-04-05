@@ -2,25 +2,22 @@ package com.example.mrcompressor;
 
 import android.Manifest;
 import android.app.ProgressDialog;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.AsyncTask;
-import android.os.BatteryManager;
-import android.os.Build;
+import android.os.CountDownTimer;
+import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -33,7 +30,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
@@ -50,6 +46,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //V03 AÑADIDO ENVIO EN BACKGROUND DE EMAIL Y ALGO DE INTERFAZ..PTE
     //v035 CREASDOS ERVICIO DE LEER NPOTIS PTE DE IMPLEMNETAR Y AÑADIDAS SHAREDPREF DE LA MAIN
     //V05 LEE YA LOS HANGOUT PERO DA CRASH..
+    //v06 funciona detecion de no vinration y alos 5 min MANDA EMAIL DE FALLO, YA LEE OK LOS HANGOUT Y CAMBIA EL TRIGGER CON MENSAJE PHSETTRIGGER XX
+
 
 
 
@@ -60,6 +58,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //pàra los valores del sms a enviar
 
 
+
+    //Declare timer del teimpo para avisar
+    CountDownTimer cTimer = null;
 
     //para ssaber sie le notif servcie esta runnning y habilitado
 
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     //para el intent Extra info
 
-    private String  TextorecibidoService ;
+    private String  TextorecibidoService ="";
 
 
 
@@ -143,6 +144,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+        //CHEQUEO ACCESOA ALEER NOTIFIS
+
+
+        initializeService();
+
+
 
         //radiogroup
 
@@ -166,11 +173,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             showSMSStatePermission();
 
 
-
-            //CHEQUEO ACCESOA ALEER NOTIFIS
-
-
-            initializeService();
 
 
 
@@ -456,33 +458,57 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             if (notificationText !=null ){
 
-                TextorecibidoService.equals(notificationText);
+
+                //TextorecibidoService.equals(notificationText);
+                TextorecibidoService=notificationText.toString();
+
+
+
+                //primero separamops le texto por espacio
+
+                String[] TextoSeparadodelService = TextorecibidoService.trim().split("\\s+");
+
+                String Texto1delservice=TextoSeparadodelService[0];
+
+                if (TextoSeparadodelService.length>1){
+                String Texto2delService=TextoSeparadodelService[1];
+                }
+
+
+
+
 
                 //enviamos email con los datos si cumple Phchksms o phchksms
 
-                if (TextorecibidoService.equals(SmsHelper.SMS_CONDITION)|| TextorecibidoService.equals(SmsHelper.SMS_CONDITION2)){
+                if (Texto1delservice.equals(SmsHelper.SMS_CONDITION)|| Texto1delservice.equals(SmsHelper.SMS_CONDITION2)){
 
-                    SendEmailInBackgroundMio();
+                    SendEmailtestMio();
                 }
 
 
                 //si es PHSETTTRIGER XX
 
 
-                if (TextorecibidoService.equals(SmsHelper.SMS_CONDITION3)){
+                if (Texto1delservice.equals(SmsHelper.SMS_CONDITION3)){
 
 
 
                     //sacamos el valor:
 
-                    String textfiltrado=removeWord(TextorecibidoService,"PHSETTTRIGER");
 
-                    Log.d(" texto filtrado es: ",textfiltrado);
+                        String Texto2delService=TextoSeparadodelService[1];
+
+
+                   // String textfiltrado=removeWord(TextorecibidoService,"PHSETTTRIGER");
+
+
+
+                    Log.d(" texto filtrado es: ",Texto2delService);
 
                     int myNum = 0;
 
                     try {
-                        myNum = Integer.parseInt(textfiltrado );
+                        myNum = Integer.parseInt(Texto2delService );
                     } catch(NumberFormatException nfe) {
                         System.out.println("Could not parse " + nfe);
                     }
@@ -494,9 +520,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     mPrefs.edit().putInt(SmsHelper.PREF_VALUETRIGGERVIBRATE,myNum).commit();
 
                     ValorSeekBar.setText(String.valueOf(ValorMinimoVibration)+"%");
+                    simpleSeekBar.setProgress(ValorMinimoVibration);
 
 
-                    SendEmailInBackgroundMio();//
+
+                    // SendEmailInBackgroundMioOK();//
 
                 }
 
@@ -536,7 +564,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (mServiceActive) {
                     // showServiceDialog(R.string.notification_listener_launch);
-                    showServiceDialog(R.string.notification_listener_launch);
+                   // showServiceDialog(R.string.notification_listener_launch); //SI ESTA OK NO HACE NADA
                 } else {
                     // showServiceDialog(R.string.notification_listener_warning);
                     showServiceDialog(R.string.notification_listener_warning);
@@ -630,6 +658,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+                    //CHEQUEO ACCESOA ALEER NOTIFIS
+
+
+                    initializeService();
+
                     //mostrarParticular(false);
                 }
                 break;
@@ -671,6 +704,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     mPrefs.edit().putString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,otherappname.getText().toString()).commit();
 
 
+
+
+                    //CHEQUEO ACCESOA ALEER NOTIFIS
+
+
+                    initializeService();
 
                 }
                 break;
@@ -869,9 +908,47 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (ValorVibrationclaculada<ValorMinimoVibration){
 
-                  //  Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration));
+                     Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration));
 
                     circleProgress.setFinishedColor(Color.RED);
+
+                    //iniciamos el timer si no existia ya!!!
+                    if (cTimer==null){
+
+
+                            cTimer = new CountDownTimer(300000, 1000) {//300 seg= 5min!!
+                                public void onTick(long millisUntilFinished) {
+
+
+
+                                    Log.d("seconds remaining: " ,Long.toString(millisUntilFinished / 1000));
+
+                                    //CADA  5 SEGUNDO UN BIP
+                                    //http://lineadecodigo.com/java/multiplo-de-un-numero-en-java/
+
+
+                                    if ((millisUntilFinished/1000)%5==0) {
+
+                                        ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+                                        toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200);
+                                    }
+
+
+                                }
+                                public void onFinish() {
+
+                                    cTimer.cancel();
+
+                                    //si llega al final manda SMS!!!
+                                    SendEmailFallo();
+
+                                }
+                            };
+                            cTimer.start();
+                        }
+
+
+
 
 
                 }
@@ -880,11 +957,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 else {
 
                     circleProgress.setFinishedColor(Color.GREEN);
+
+                    //CANCELO LA CUNETA ATRAS
+
+
+
+                    //cancel timer
+
+                        if(cTimer!=null){
+                            cTimer.cancel();
+                            cTimer=null;
+
+
+
+                        }
+
+
+
+
                 }
             }
         }
 
     }
+
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -926,7 +1023,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
-    public void SendEmailInBackgroundMio(){
+    public void SendEmailInBackgroundMioOK(){
+
+
 
 
         String srntopass = srn.getText().toString();
@@ -1007,18 +1106,124 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
+
+
+    public void SendEmailInBackgroundMioMAL(){
+
+
+
+
+        String srntopass = srn.getText().toString();
+        String emailtopass = email.getText().toString();
+        String hospitalnametopass = hospname.getText().toString();
+        String appnametoreadnotistopass = mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none");
+
+
+
+
+
+
+
+
+        //empieza a girara spinnerr
+
+
+        // empiezagiraprogressbar();
+
+
+        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
+
+        //new Email::
+
+        //String[] toArr = {"interamaster@gmail.com"};
+
+        String[] toArr = {emailtopass};
+
+        m.setTo(toArr);
+        m.setFrom("icas.generico@gmail.com");
+        m.setSubject("MRCOMPRESSOR  STOPPED!!! "+hospitalnametopass);
+        // m.setBody("dasdsd");
+
+        m.setBody("MRCOMPRESSOR IS STOPPED:\n" +"EQUIPO SRN: "+ srntopass + "\nNOMBRE: " + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+                "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
+                " (C) JOSE RAMON DELGADO 2019");
+
+
+        try {
+            // m.addAttachment("/sdcard/bday.jpg");
+            if(m.send()) {
+                //Toast.makeText(this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a true y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=true;
+
+            } else {
+
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a false  y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=false;
+
+
+                //Toast.makeText(this, "Email was not sent.", Toast.LENGTH_LONG).show();
+                // Toast.makeText(this, "Lo siento su movil no esta preparado para mandar emails de manera autoamtica vams ahcerlo de manera manual" +
+                //   "", Toast.LENGTH_SHORT).show();
+
+                //  ManualEmailSiFallaAutomatico();
+
+            }
+        } catch(Exception e) {
+            Log.e("MailApp", "Could not send email", e);
+
+            //lo mandamos manual
+
+            SendEmailOK=false;
+
+
+            // ManualEmailSiFallaAutomatico();
+        }
+
+
+
+
+
+    }
+
+
     public void SendEmailtestMio() {
 
 
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //Do something after 2s para que ñpueda leer el sensor
+
+                new SendMailOK().execute("");
+            }
+        }, 2000);
 
 
-        new SendMail().execute("");
+
+       // new SendMailOK().execute("");
+
+    }
+
+    private void SendEmailFallo() {
+
+
+        new SendMailFALLO().execute("");
+
 
     }
 
 
 
-    private class SendMail extends AsyncTask<String, Integer, Void> {
+
+
+    private class SendMailFALLO extends AsyncTask<String, Integer, Void> {
 
 
         protected void onProgressUpdate() {
@@ -1027,7 +1232,67 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         @Override
         protected Void doInBackground(String... params) {
-            SendEmailInBackgroundMio();
+
+
+
+
+
+
+            SendEmailInBackgroundMioMAL();
+            return null;
+        }
+
+        protected void onPreExecute() {
+            //called before doInBackground() is started
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            if (SendEmailOK) {
+                //funciono ok
+
+                // progressDialog.hide();
+                Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
+
+                //finish();
+
+
+            }
+
+            else {
+
+                //ha fallado
+
+                Toast.makeText(MainActivity.this, "Email fallo!!!", Toast.LENGTH_LONG).show();
+            }
+
+
+        }
+    }
+
+
+
+
+
+
+private class SendMailOK extends AsyncTask<String, Integer, Void> {
+
+
+        protected void onProgressUpdate() {
+            //called when the background task makes any progress
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+
+
+
+
+
+            SendEmailInBackgroundMioOK();
             return null;
         }
 
