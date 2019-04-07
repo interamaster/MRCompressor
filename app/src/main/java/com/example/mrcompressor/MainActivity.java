@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //v06 funciona detecion de no vinration y alos 5 min MANDA EMAIL DE FALLO, YA LEE OK LOS HANGOUT Y CAMBIA EL TRIGGER CON MENSAJE PHSETTRIGGER XX
     //v08 ENVIO EMAIL SI POWEROFF O ON Y SMS Y DETECTAR SI TIENE SIM O NO Y SI NO TIENE RED AVISA DE QUE NO MANDARA NADA
     //V085 AÑADIDO AJUSTES CON EMAIL Y PASS PARA ENVIAR POR SI EN UN FUTURO CAMBIA....Y TEMPORIZADORES DE REENVIO EMAIL A LA HORA Y A LAS 24H
+    //v099 AÑADIDO ICONO Y TERMINDAD..PASA A MODO PRUEBA
 
 
 
@@ -121,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     float ValorVibrationclaculada;
+    float ValorVibrationclaculadaANTERIOR;
    private  int ValorMinimoVibration;
     // para el sensor
 
@@ -1178,7 +1180,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-
+                ValorVibrationclaculadaANTERIOR=ValorVibrationclaculada;
 
                 ////////////
 
@@ -1189,6 +1191,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 ValorVibrationclaculada=new Float( Math.abs(difx +dify+difz));
 
 
+
+
+                /*
+                if ((ValorVibrationclaculada > ValorVibrationclaculadaANTERIOR)&&(ValorVibrationclaculada < 100)){
+
+                    ValorVibrationclaculada=ValorVibrationclaculadaANTERIOR+1;
+
+                }
+                else {
+
+                    ValorVibrationclaculada=ValorVibrationclaculadaANTERIOR-1;
+                }
+
+                */
 
                // absLabel.setText(String.format("ABS: %+2.0f ", (float)Math.round(ValorVibrationclaculada)));
 
@@ -1206,9 +1222,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (ValorVibrationclaculada<ValorMinimoVibration){
 
-                     Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration));
+                     Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration)+"anterior:"+String.valueOf(ValorVibrationclaculadaANTERIOR)+" actual:"+String.valueOf(ValorVibrationclaculada));
 
                     circleProgress.setFinishedColor(Color.RED);
+                   // circleProgress.setUnfinishedColor(Color.RED);//asi se reelna entero verde o rojo...
 
 
                     //si ya tenia que reenviar por una hora
@@ -1405,6 +1422,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 else {
 
                     circleProgress.setFinishedColor(Color.GREEN);
+                    //circleProgress.setUnfinishedColor(Color.GREEN);//asi se reelna entero verde o rojo...
+
 
                     //CANCELO LA CUNETA ATRAS
 
