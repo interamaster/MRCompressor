@@ -16,6 +16,7 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -55,6 +56,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //V05 LEE YA LOS HANGOUT PERO DA CRASH..
     //v06 funciona detecion de no vinration y alos 5 min MANDA EMAIL DE FALLO, YA LEE OK LOS HANGOUT Y CAMBIA EL TRIGGER CON MENSAJE PHSETTRIGGER XX
     //v08 ENVIO EMAIL SI POWEROFF O ON Y SMS Y DETECTAR SI TIENE SIM O NO Y SI NO TIENE RED AVISA DE QUE NO MANDARA NADA
+    //V085 AÑADIDO AJUSTES CON EMAIL Y PASS PARA ENVIAR POR SI EN UN FUTURO CAMBIA....Y TEMPORIZADORES DE REENVIO EMAIL A LA HORA Y A LAS 24H
+
 
 
 
@@ -63,6 +66,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final String TAG = "MainAc sensores";
 
     //pàra los valores del sms a enviar
+
+
+    //para saber si hay q reenviar email en 1h 12h o 24h
+
+
+    private boolean reenviaren1h=false;
+    private boolean reenviaren12h=false;
+    private  boolean reenviaren24h=false;
+
+    private int timeranimacion;
 
 
     //para el countdown animation
@@ -143,6 +156,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private EditText srn,email,hospname,otherappname;
 
 
+    private EditText emailtosend,passemailtosend;
+
 
 
 
@@ -161,6 +176,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
+
+
+        //recuperar alarmas de reenvio
+
+
+        reenviaren1h=mPrefs.getBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL1H,false);
+        reenviaren12h=mPrefs.getBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL12H,false);
+        reenviaren24h=mPrefs.getBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL24H,false);
+
+
+        //y el valor del timer de aniamcion de avisod e reenvio email
+
+
+        timeranimacion=mPrefs.getInt(SmsHelper.PREF_INT_TIEMPOANIMACIONTIMER,300);//por defecto 300 segs
 
 
         //CHEQUEO ACCESO  A EER NOTIFIS
@@ -217,6 +246,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         email = (EditText) findViewById(R.id.emailtext);
         hospname = (EditText) findViewById(R.id.hospnameedittext);
         otherappname = (EditText) findViewById(R.id.otherapppackagename);
+
+        emailtosend=(EditText) findViewById(R.id.emailsender);
+        passemailtosend=(EditText) findViewById(R.id.emailpasssender);
 
 
         //mejor los hag focusabel apra que guarden el valor despues de darle al teclado done o de salir:
@@ -350,6 +382,69 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 return false;
             }
         });
+
+
+
+        //email sender
+
+        ((EditText)findViewById(R.id.emailsender)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_EMAILSENDER,emailtosend.getText().toString()).commit();
+                }
+            }
+        });
+
+        srn.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_EMAILSENDER,emailtosend.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
+
+        //passemailsender
+
+
+        ((EditText)findViewById(R.id.emailpasssender)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_PASSEMAILSENDER,passemailtosend.getText().toString()).commit();
+                }
+            }
+        });
+
+        srn.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_PASSEMAILSENDER,passemailtosend.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
 
 
         //el gauge:
@@ -782,6 +877,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+                    //chequea app esta instalada
+
+                    if (!isAppInstalled("com.google.android.talk")){
+
+
+                        //avisa que no esta instalada
+
+                        Toast.makeText(MainActivity.this, "QUIZAS DEBERIAS INSTALAR HANGOUT ARTISTA!!!!", Toast.LENGTH_SHORT).show();
+
+                        //y manda a google play
+
+
+
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.talk&hl=es"));
+                        startActivity(intent);
+                    }
+
+
 
                     //CHEQUEO ACCESOA ALEER NOTIFIS
 
@@ -854,12 +967,52 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     //CHEQUEO ACCESOA ALEER NOTIFIS
 
 
+
+                    //chequea app esta instalada
+
+                    if (!isAppInstalled(mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none"))){
+
+
+                        //avisa que no esta instalada
+
+                        Toast.makeText(MainActivity.this, "QUIZAS DEBERIAS INSTALAR ESA APK ARTISTA..!!!!", Toast.LENGTH_SHORT).show();
+
+                        //y manda a google play
+
+
+
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id="+mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none")));
+                        startActivity(intent);
+                    }
+
+
                     initializeService();
 
                 }
                 break;
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////chequea app is installed//////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+    private boolean isAppInstalled(String packageName) {
+        PackageManager pm = getPackageManager();
+        boolean installed = false;
+        try {
+            pm.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+            installed = true;
+        } catch (PackageManager.NameNotFoundException e) {
+            installed = false;
+        }
+        return installed;
+    }
+
+
 
 
     /**
@@ -1057,6 +1210,67 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     circleProgress.setFinishedColor(Color.RED);
 
+
+                    //si ya tenia que reenviar por una hora
+
+
+
+                    if (reenviaren1h && timeranimacion==300){
+
+                    //asi solo se ejecyut6a 1 vez!!!
+
+
+                        timeranimacion=3600;
+                        mPrefs.edit().putInt(SmsHelper.PREF_INT_TIEMPOANIMACIONTIMER,3600).commit();
+
+                        //y reininio timer
+                        //cancel timer
+
+                        if(cTimer!=null){
+                            cTimer.cancel();
+                            cTimer=null;
+
+                        }
+
+                        //y la animation
+
+                        if (countDownAnimation!=null) {
+
+
+                            countDownAnimation.cancel();
+                            countDownAnimation=null;
+
+
+
+                        }
+
+
+
+
+                    }
+
+                    if (reenviaren24h && timeranimacion==3600){
+
+                        //solo se ejecuta 1 vez
+
+                        //y reininio timer
+                        //cancel timer
+
+                        if(cTimer!=null){
+                            cTimer.cancel();
+                            cTimer=null;
+
+                        }
+
+                        //no la animacion!!! pues seria 360*24 y  o cabe
+
+                        timeranimacion=3600*24;
+                        mPrefs.edit().putInt(SmsHelper.PREF_INT_TIEMPOANIMACIONTIMER,3600*24).commit();
+
+
+
+                    }
+
                     //iniciamos el timer si no existia ya!!!
                     if (cTimer==null){
 
@@ -1070,7 +1284,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             //////////////////countdown animation///////////////////////
 
                             textCountdown = (TextView) findViewById(R.id.textcountdown);
-                            countDownAnimation = new CountDownAnimation(textCountdown, 300);//300 SEGUNDOS
+                            countDownAnimation = new CountDownAnimation(textCountdown, timeranimacion);//300 SEGUNDOS por defecto
 
                             //elegimnoms una niamacionmas chula:
                             Animation scaleAnimation = new ScaleAnimation(1.0f, 0.0f, 1.0f, 0.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
@@ -1094,7 +1308,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-                            cTimer = new CountDownTimer(300000, 1000) {//300 seg= 5min!!
+                            cTimer = new CountDownTimer(timeranimacion*1000, 1000) {//300 seg= 5min!! hay que onerlo en milisecs por eso x1000
                                 public void onTick(long millisUntilFinished) {
 
 
@@ -1151,6 +1365,30 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                                     //si llega al final manda SMS!!!
                                     SendEmailFallo();
+                                    //activo reenvio email en 1h
+
+
+                                    if (!reenviaren1h) {
+
+                                        reenviaren1h = true;
+
+                                        reenviaren1h = mPrefs.edit().putBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL1H, true).commit();
+
+                                    }
+
+                                    else {
+
+                                        //si ya estaba el 1 hora activo el 24h
+
+                                        reenviaren24h=true;
+
+
+
+                                        reenviaren1h = mPrefs.edit().putBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL24H, true).commit();
+
+
+                                    }
+
 
                                 }
                             };
@@ -1193,6 +1431,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
                     }
+
+                    //y quitar lo de repetir en 1h
+
+                    reenviaren1h=false;
+
+                   mPrefs.edit().putBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL1H,false).commit();
+
+                   // y en 24h
+
+                    reenviaren24h=false;
+
+                    mPrefs.edit().putBoolean(SmsHelper.PREF_BOOL_REENVIAREMAIL24H,false).commit();
+
+                    // y pongo timerrep de nuevo a 300 sgs
+
+
+                    timeranimacion=300;
+                    mPrefs.edit().putInt(SmsHelper.PREF_INT_TIEMPOANIMACIONTIMER,300).commit();
 
 
                 }
@@ -1314,11 +1570,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //empieza a girara spinnerr
 
+        //recupermaosn valores de email envio
 
-       // empiezagiraprogressbar();
+        String emailtosend2=emailtosend.getText().toString();
+        String passemailtosend2=passemailtosend.getText().toString();
+
+        // empiezagiraprogressbar();
 
 
-        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
+        Mail m = new Mail(emailtosend2, passemailtosend2);
+
         //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
 
         //new Email::
@@ -1399,11 +1662,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //empieza a girara spinnerr
 
+        //recupermaosn valores de email envio
+        String emailtosend2=emailtosend.getText().toString();
+        String passemailtosend2=passemailtosend.getText().toString();
 
         // empiezagiraprogressbar();
 
 
-        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
+        Mail m = new Mail(emailtosend2, passemailtosend2);
+
+
         //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
 
         //new Email::
@@ -1480,14 +1750,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+        //recupermaosn valores de email envio
 
-        //empieza a girara spinnerr
 
+        String emailtosend2=emailtosend.getText().toString();
+        String passemailtosend2=passemailtosend.getText().toString();
 
         // empiezagiraprogressbar();
 
 
-        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+        //Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
+        Mail m = new Mail(emailtosend2, passemailtosend2);
+
+
         //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
 
         //new Email::
@@ -1566,6 +1842,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+        //recupermaosn valores de email envio
+
+        String emailtosend2=emailtosend.getText().toString();
+        String passemailtosend2=passemailtosend.getText().toString();
+
+        // empiezagiraprogressbar();
+
+
+        //Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
+        Mail m = new Mail(emailtosend2, passemailtosend2);
+
 
 
         //empieza a girara spinnerr
@@ -1574,7 +1862,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // empiezagiraprogressbar();
 
 
-        Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
         //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
 
         //new Email::

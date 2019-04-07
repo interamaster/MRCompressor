@@ -31,8 +31,15 @@ public class SmsHelper {
     public static final String PREF_VALUEVIBRATENOW = "valuevibrationnow";
     public static final String PREF_VALUETRIGGERVIBRATE = "valuetriggervibtrateset";
     public static final String PREF_NAMEAPPTOREADNOTIFICACTIONS = "nameapptoreadnotif";
-    public static final String PREF_BOOL_ALARMADEFALLO ="false";
+    public static final String PREF_BOOL_REENVIAREMAIL1H ="false";
+    public static final String PREF_BOOL_REENVIAREMAIL12H ="false";
+    public static final String PREF_BOOL_REENVIAREMAIL24H ="false";
+    public static final String PREF_INT_TIEMPOANIMACIONTIMER ="timer";
     public static final String PREF_RADIOBUTTONVALUEAPPTOREADNOTIS="radiobuttonapptoreadnotis";
+
+    public static final String PREF_EMAILSENDER = "email";//sera el user name
+
+    public static final String PREF_PASSEMAILSENDER = "email";//sera el user name
 
     public static boolean isValidPhoneNumber(String phoneNumber) {
         return android.util.Patterns.PHONE.matcher(phoneNumber).matches();
