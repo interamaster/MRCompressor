@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //V085 AÑADIDO AJUSTES CON EMAIL Y PASS PARA ENVIAR POR SI EN UN FUTURO CAMBIA....Y TEMPORIZADORES DE REENVIO EMAIL A LA HORA Y A LAS 24H
     //v099 AÑADIDO ICONO Y TERMINDAD..PASA A MODO PRUEBA
     //v1,0 AÑADIDA VERSION NUMBER EN TITLE Y AÑADIDO ENVIO DE SMS EN CASO DE TEST,FALLO ,POWER OFF Y POWER ON ,Y RESPONDE A ENVIO SMS.. LISTA A PROBAR IN SITE
-
+    //v1001 SOLUCIONADO SMS PERMISO SEND EN OREO!!!
 
 
 
@@ -1121,17 +1121,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private void showSMSStatePermission() {
+
+
+        //READ SMS OK:
         int permissionCheck = ContextCompat.checkSelfPermission(
                 this, Manifest.permission.RECEIVE_SMS);
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.RECEIVE_SMS)) {
-                showExplanation("Permission Needed", "SMS", Manifest.permission.RECEIVE_SMS, REQUESTSMS_PERMISSION_CODE);
+                showExplanation("Permission Needed", "SMS READ", Manifest.permission.RECEIVE_SMS, REQUESTSMS_PERMISSION_CODE);
             } else {
                 requestPermission(Manifest.permission.RECEIVE_SMS, RECEIVER_VISIBLE_TO_INSTANT_APPS);
             }
         } else {
-            Toast.makeText(MainActivity.this, "Permission (already) Granted!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Permission  READ SMS (already) Granted!", Toast.LENGTH_SHORT).show();
+        }
+
+
+
+        //SEND SMS:
+
+
+        int permissionChecksend = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.SEND_SMS);
+        if (permissionChecksend != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.SEND_SMS)) {
+                showExplanation("Permission Needed", "SMS SEND", Manifest.permission.SEND_SMS, REQUESTSMS_PERMISSION_CODE);
+            } else {
+                requestPermission(Manifest.permission.SEND_SMS, RECEIVER_VISIBLE_TO_INSTANT_APPS);
+            }
+        } else {
+            Toast.makeText(MainActivity.this, "Permission SEND SMS (already) Granted!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -2131,16 +2152,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         if (isSimAvailable()){
 
-            if (numtelefono!=null) {
 
 
-                String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR TEST!! \nACTUAL VIBRATION:"+ ValorVibrationclaculada+"\nTRIGGER VALUE:"+ValorMinimoVibration;
 
-                SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+            //tiene permisos sms send?
 
-                Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+            //SEND SMS:
 
+
+            int permissionChecksend = ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.SEND_SMS);
+            if (permissionChecksend != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.SEND_SMS)) {
+                    showExplanation("Permission Needed", "SMS SEND", Manifest.permission.SEND_SMS, REQUESTSMS_PERMISSION_CODE);
+                } else {
+                    requestPermission(Manifest.permission.SEND_SMS, RECEIVER_VISIBLE_TO_INSTANT_APPS);
+                }
+            } else {
+                //Toast.makeText(MainActivity.this, "Permission SEND SMS (already) Granted!", Toast.LENGTH_SHORT).show();
+
+                if (numtelefono!=null) {
+
+
+                    String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR TEST!! \nACTUAL VIBRATION:"+ ValorVibrationclaculada+"\nTRIGGER VALUE:"+ValorMinimoVibration;
+
+                    SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+
+                    Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+
+                }
             }
+
+
 
 
         }
