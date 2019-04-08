@@ -9,7 +9,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:custom="http://schemas.android.com/apk/res-auto"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@android:color/darker_gray"
+    >
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -48,7 +50,20 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
             android:text="25%"
+            android:textColor="@android:color/white"
             android:textSize="50dp" />
+
+
+            <TextView
+
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="150dp"
+                android:text="LONG PRESS CIRCLE TO TEST"
+                android:textSize="20dp"
+                android:textColor="@color/colorPrimary"/>
+
+
     </RelativeLayout>
 
 
@@ -59,6 +74,7 @@
 
 
             <TextView
+
                 android:id="@+id/emailtosendtext"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -77,6 +93,30 @@
 
         </RelativeLayout>
 
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp">
+
+
+            <TextView
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Phone number to notify" />
+
+            <EditText
+                android:layout_marginTop="20dp"
+                android:id="@+id/telfnumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number"
+                android:hint="enter your phone number if sms!!!"
+                android:imeOptions="actionDone"/>
+
+
+        </RelativeLayout>
 
 
         <RelativeLayout

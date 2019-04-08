@@ -1,6 +1,7 @@
 package com.example.mrcompressor;
 
 
+import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -82,13 +83,36 @@ import android.widget.Toast;
 
 
 
-                if ((smsBody.startsWith(SmsHelper.SMS_CONDITION)) || (smsBody.startsWith(SmsHelper.SMS_CONDITION2)) ) {
+                if ((smsBody.startsWith(SmsHelper.SMS_CONDITION)) || (smsBody.startsWith(SmsHelper.SMS_CONDITION2) || (smsBody.startsWith(SmsHelper.SMS_CONDITION3)))) {
                     Log.d(TAG, "Sms with condition detected");
-                    Toast.makeText(context, "BroadcastReceiver caught conditional SMS: " + smsBody, Toast.LENGTH_LONG).show();
+                   // Toast.makeText(context, "BroadcastReceiver caught conditional SMS: " + smsBody, Toast.LENGTH_LONG).show();
 
                     //solo para coger valores de mainactivity!!
 
-                    SmsHelper.sendInfoSms(smsSender,MainActivity.EXTRA_TIME);
+                   // SmsHelper.sendInfoSms(smsSender,MainActivity.EXTRA_TIME);//ESTO SOLO MANDA SMS AL REMITENTE PERO SIN LA INFO CORRECTA
+                    //MEJOR COGEMOPS LOS VALORES
+
+
+                    //PASAMOS EL INTENT A MAIN CON EL TEXT DEL SMS y elñ ya m,andara email y sms
+
+
+
+
+                    Intent dialogIntent = new Intent(context, MainActivity.class);
+                    dialogIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+
+
+
+                    //y lo ponemos de extra en el intent:
+                    dialogIntent.putExtra("TEXTORECIBIDO",smsBody);
+
+
+
+
+                    context.startActivity(dialogIntent);
+
+
                 }
 
 

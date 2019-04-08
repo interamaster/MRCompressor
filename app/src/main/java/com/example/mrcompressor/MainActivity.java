@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //v08 ENVIO EMAIL SI POWEROFF O ON Y SMS Y DETECTAR SI TIENE SIM O NO Y SI NO TIENE RED AVISA DE QUE NO MANDARA NADA
     //V085 AÑADIDO AJUSTES CON EMAIL Y PASS PARA ENVIAR POR SI EN UN FUTURO CAMBIA....Y TEMPORIZADORES DE REENVIO EMAIL A LA HORA Y A LAS 24H
     //v099 AÑADIDO ICONO Y TERMINDAD..PASA A MODO PRUEBA
+    //v1,0 AÑADIDA VERSION NUMBER EN TITLE Y AÑADIDO ENVIO DE SMS EN CASO DE TEST,FALLO ,POWER OFF Y POWER ON ,Y RESPONDE A ENVIO SMS.. LISTA A PROBAR IN SITE
 
 
 
@@ -160,6 +161,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private EditText emailtosend,passemailtosend;
 
+    private  EditText numtelefono;
+
 
 
 
@@ -170,6 +173,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+        //poner la version en el titulo
+
+        this.setTitle("MRCOMPRESSOR V."+BuildConfig.VERSION_NAME);
 
 
 
@@ -251,6 +257,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         emailtosend=(EditText) findViewById(R.id.emailsender);
         passemailtosend=(EditText) findViewById(R.id.emailpasssender);
+
+        numtelefono=(EditText) findViewById(R.id.telfnumber);
 
 
         //mejor los hag focusabel apra que guarden el valor despues de darle al teclado done o de salir:
@@ -403,7 +411,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        srn.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        emailtosend.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -434,7 +442,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        srn.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        passemailtosend.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -448,6 +456,36 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
+        //telfnumber
+
+
+        ((EditText)findViewById(R.id.telfnumber)).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                /* When focus is lost check that the text field
+                 * has valid values.
+                 */
+                if (!hasFocus) {
+
+                    mPrefs.edit().putString(SmsHelper.PREF_TELF_NUMBER,numtelefono.getText().toString()).commit();
+                }
+            }
+        });
+
+        numtelefono.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // do your stuff here
+                    mPrefs.edit().putString(SmsHelper.PREF_TELF_NUMBER,numtelefono.getText().toString()).commit();
+
+                }
+                return false;
+            }
+        });
+
+
 
         //el gauge:
 
@@ -457,7 +495,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public boolean onLongClick(View v) {
 
-                SendEmailtestMio();
+                SendEmailYSMStestMio();
 
                 return true;
             }
@@ -486,7 +524,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         hospname.setText(mPrefs.getString(SmsHelper.PREF_HOSPNAME,null));
         otherappname.setText(mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,null));
 
+        numtelefono.setText(mPrefs.getString(SmsHelper.PREF_TELF_NUMBER,null));
+
         ValorMinimoVibration=mPrefs.getInt(SmsHelper.PREF_VALUETRIGGERVIBRATE,25);
+
+
+        emailtosend.setText(mPrefs.getString(SmsHelper.PREF_EMAILSENDER,"icas.generico@gmail.com"));
+        passemailtosend.setText(mPrefs.getString(SmsHelper.PREF_PASSEMAILSENDER,"Sevilla2!"));
 
         Log.d("trigger en: ",String.valueOf( ValorMinimoVibration));
 
@@ -582,6 +626,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 //TextorecibidoService.equals(notificationText);
                 TextorecibidoService=notificationText.toString();
 
+              //  Log.d(TAG , "notificacion recibida de intent: "+TextorecibidoService);
+
 
 
                 //primero separamops le texto por espacio
@@ -602,7 +648,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (Texto1delservice.equals(SmsHelper.SMS_CONDITION)|| Texto1delservice.equals(SmsHelper.SMS_CONDITION2)){
 
-                    SendEmailtestMio();
+                   // Log.d(TAG , "notificacion recibida de intent: ERA phchksms!! y lo ejecuto"  );
+
+                    SendEmailYSMStestMio();
                 }
 
 
@@ -610,6 +658,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
                 if (Texto1delservice.equals(SmsHelper.SMS_CONDITION3)){
+
+                 //   Log.d(TAG , "notificacion recibida de intent: ERA PHSETTRIGER!! y lo ejecuto"  );
 
 
 
@@ -623,7 +673,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-                    Log.d(" texto filtrado es: ",Texto2delService);
+                  //  Log.d(" texto filtrado es: ",Texto2delService);
 
                     int myNum = 0;
 
@@ -654,18 +704,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (Texto1delservice.equals(SmsHelper.INTENTPOWEROFF)){
 
+                  //  Log.d(TAG , "notificacion recibida de intent: ERA POWEROFF!! y lo ejecuto"  );
+
 
 
                     //TIENE SIM?
 
-                    if (isSimAvailable()) {
 
-                        String hospitalnametopass = hospname.getText().toString();
+                    if (isSimAvailable()){
+
+                        if (numtelefono!=null) {
 
 
-                        SmsHelper.sendInfoSms(MainActivity.EXTRA_SMSCONFIGURADO, "OJO MRCompresor de :" +hospitalnametopass + " DESENCHUFADO!!");
+                            String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR DESENCHUFADO!!";
+
+                            SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+
+                            Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+
+                        }
+
 
                     }
+
 
                     // MANDA EMAIL SIMEPRE
 
@@ -684,18 +745,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (Texto1delservice.equals(SmsHelper.INTENTPOWERON)){
 
+                  //  Log.d(TAG , "notificacion recibida de intent: ERA POWERON!! y lo ejecuto"  );
 
 
                     //TIENE SIM?
 
-                    if (isSimAvailable()) {
+                    if (isSimAvailable()){
 
-                        String hospitalnametopass = hospname.getText().toString();
+                        if (numtelefono!=null) {
 
 
-                        SmsHelper.sendInfoSms(MainActivity.EXTRA_SMSCONFIGURADO, "OJO MRCompresor de :" +hospitalnametopass + " VUELTO A ENCHUFAR!!");
+                            String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR VUELTO A ENCHUFAR!!";
+
+                            SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+
+                            Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+
+                        }
+
 
                     }
+
 
                     // MANDA EMAIL SIMEPRE
 
@@ -706,6 +776,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
                 }
+
+
+                //SI ES REBOOT TAMBIEN
+
+
+                if (Texto1delservice.equals(SmsHelper.INTENTREBOOT)){
+
+                 //   Log.d(TAG , "notificacion recibida de intent: ERA REBOOT!! y lo ejecuto"  );
+
+
+
+                    //ENVIO SMS Y EMAIL
+
+                    SendEmailYSMSTrasReboot();
+
+
+                }
+
 
 
             }
@@ -1222,7 +1310,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if (ValorVibrationclaculada<ValorMinimoVibration){
 
-                     Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration)+"anterior:"+String.valueOf(ValorVibrationclaculadaANTERIOR)+" actual:"+String.valueOf(ValorVibrationclaculada));
+                   //  Log.d(TAG+" MENOR!:",String.valueOf(ValorMinimoVibration)+"anterior:"+String.valueOf(ValorVibrationclaculadaANTERIOR)+" actual:"+String.valueOf(ValorVibrationclaculada));
 
                     circleProgress.setFinishedColor(Color.RED);
                    // circleProgress.setUnfinishedColor(Color.RED);//asi se reelna entero verde o rojo...
@@ -1380,8 +1468,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                                     cTimer.cancel();
 
-                                    //si llega al final manda SMS!!!
-                                    SendEmailFallo();
+                                    //si llega al final manda EMAIL!!!
+                                    SendEmailySMSFallo();
+                                    //Y SMS SI PUEDE
+
+
                                     //activo reenvio email en 1h
 
 
@@ -1660,6 +1751,95 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
+    public void SendEmailInBackgroundMioOKTRASREBOOT(){
+
+
+
+
+        String srntopass = srn.getText().toString();
+        String emailtopass = email.getText().toString();
+        String hospitalnametopass = hospname.getText().toString();
+        String appnametoreadnotistopass = mPrefs.getString(SmsHelper.PREF_NAMEAPPTOREADNOTIFICACTIONS,"none");
+
+
+
+
+
+
+
+
+        //empieza a girara spinnerr
+
+        //recupermaosn valores de email envio
+
+        String emailtosend2=emailtosend.getText().toString();
+        String passemailtosend2=passemailtosend.getText().toString();
+
+        // empiezagiraprogressbar();
+
+
+        //Mail m = new Mail("icas.generico@gmail.com", "Sevilla2!");
+
+        Mail m = new Mail(emailtosend2, passemailtosend2);
+
+        //String[] toArr = {"jrdvsoftyopozi@gmail.com"};
+
+        //new Email::
+
+        //String[] toArr = {"interamaster@gmail.com"};
+
+        String[] toArr = {emailtopass};
+
+        m.setTo(toArr);
+        m.setFrom("icas.generico@gmail.com");
+        m.setSubject("MRCOMPRESSOR "+hospitalnametopass);
+        // m.setBody("dasdsd");
+
+        m.setBody("MRCOMPRESSOR SE HA REINICIADO!!:\n \nESTO QUIERE DECIR QUE SEGURAMENTE NO ESTA FUNCIONADO HASTA QUE SE DESBLOQUEE EL MOVIL!!!!\n\n" +"EQUIPO SRN: "+ srntopass + "\nNOMBRE: " + hospitalnametopass + "\n LEYENDO APK: " + appnametoreadnotistopass +
+                "\n VALOR DE TRIGGER:" + ValorMinimoVibration + "\n VALOR ACTUAL VIBRACION:" +ValorVibrationclaculada+ " \n Start ENCRYPTED:" + "\n \n \n " +
+                " (C) JOSE RAMON DELGADO 2019");
+
+
+        try {
+            // m.addAttachment("/sdcard/bday.jpg");
+            if(m.send()) {
+                //Toast.makeText(this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a true y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=true;
+
+            } else {
+
+                //al hacerlo en backgrousd nos e pueden poner Toast!!!
+                //asin que pongo la ivar a false  y ya en el postexecute del asyntask que lo ponga!!!
+
+                SendEmailOK=false;
+
+
+                //Toast.makeText(this, "Email was not sent.", Toast.LENGTH_LONG).show();
+                // Toast.makeText(this, "Lo siento su movil no esta preparado para mandar emails de manera autoamtica vams ahcerlo de manera manual" +
+                //   "", Toast.LENGTH_SHORT).show();
+
+                //  ManualEmailSiFallaAutomatico();
+
+            }
+        } catch(Exception e) {
+            Log.e("MailApp", "Could not send email", e);
+
+            //lo mandamos manual
+
+            SendEmailOK=false;
+
+
+            // ManualEmailSiFallaAutomatico();
+        }
+
+
+
+
+
+    }
 
 
     public void SendEmailInBackgroundMioMAL(){
@@ -1944,7 +2124,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-    public void SendEmailtestMio() {
+    public void SendEmailYSMStestMio() {
+
+
+        //TIENE SIM?
+
+        if (isSimAvailable()){
+
+            if (numtelefono!=null) {
+
+
+                String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR TEST!! \nACTUAL VIBRATION:"+ ValorVibrationclaculada+"\nTRIGGER VALUE:"+ValorMinimoVibration;
+
+                SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+
+                Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+
+            }
+
+
+        }
+
 
 
         final Handler handler = new Handler();
@@ -1963,7 +2163,111 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    private void SendEmailFallo() {
+
+    public void SendEmailYSMSTrasReboot() {
+
+
+
+
+        //lo miramos a laos 20 segundpos pues la sim aun no arranca
+        //y a parte esta mal el telfnumer!!lo cogemo s de la pref
+        //pero no s eporque pero no lo manda..quizas depende del movil..asi se queda el email va bien
+
+
+
+
+
+        final Handler handler2 = new Handler();
+        handler2.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //Do something after 20s para que ñpueda leer el sensor
+
+                //TIENE SIM?
+
+                if (isSimAvailable()){
+
+                  //  Log.d(TAG , " notificacion recibida de si tiene sim tras reboot"  );
+
+
+                    String numtelffrompref=mPrefs.getString(SmsHelper.PREF_TELF_NUMBER,null);
+
+
+
+                    if (numtelffrompref!=null) {
+
+                    //    Log.d(TAG , "notificacion recibida de si tiene numero de telefono tras reboot:"+numtelffrompref + " y numteldeedittext ees:"+numtelefono  );
+
+
+                        String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nMRCOMPRESSOR SE HA REINICIADO!!! \n ESTO  QUIERE DECIR QUE SEGURAMENTE NO ESTA FUNCIONANDO NI LO HARA HASTA QUE SE  DESBLOQUEE EL TERMINAL!! ";
+
+                        //SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+                        SmsHelper.sendInfoSms(numtelffrompref,textoSMS);
+
+                      //  Log.d(TAG , "notificacion recibida de si ENVIO  SMS  tras reboot"  );
+
+                        Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelffrompref, Toast.LENGTH_SHORT).show();
+
+                    }
+
+                   // else Log.d(TAG , "notificacion recibida de NO TIENE  numero de telefono tras reboot:"+numtelffrompref  );
+
+
+                }
+
+             //  else  Log.d(TAG , "notificacion recibida de NO TIENE tras reboot y  40 segs"  );
+
+
+
+            }
+        }, 20000);
+
+
+
+
+
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //Do something after 2s para que ñpueda leer el sensor
+
+                new SendMailTRASREBBOT().execute("");
+
+
+
+            }
+        }, 2000);
+
+
+
+        // new SendMailOK().execute("");
+
+    }
+
+
+
+    private void SendEmailySMSFallo() {
+
+
+
+
+        if (isSimAvailable()){
+
+            if (numtelefono!=null) {
+
+
+                String textoSMS="SRN:"+srn.getText().toString()+"\nHOSPITAL:"+hospname.getText().toString()+"\nTHE COMPRESSOR HAS STOPPED!! \nACTUAL VIBRATION:"+ ValorVibrationclaculada+"\nTRIGGER VALUE:"+ValorMinimoVibration;
+
+                SmsHelper.sendInfoSms(numtelefono.getText().toString(),textoSMS);
+
+                Toast.makeText(MainActivity.this, "SENDING SMS TO:"+numtelefono.getText().toString(), Toast.LENGTH_SHORT).show();
+
+            }
+
+
+        }
+
 
 
         new SendMailFALLO().execute("");
@@ -2160,6 +2464,62 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 //funciono ok
 
                // progressDialog.hide();
+                Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
+
+                //finish();
+
+
+            }
+
+            else {
+
+                //ha fallado
+
+                Toast.makeText(MainActivity.this, "Email fallo!!!", Toast.LENGTH_LONG).show();
+            }
+
+
+        }
+    }
+
+
+
+
+
+
+
+
+    private class SendMailTRASREBBOT extends AsyncTask<String, Integer, Void> {
+
+
+        protected void onProgressUpdate() {
+            //called when the background task makes any progress
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+
+
+
+
+
+            SendEmailInBackgroundMioOKTRASREBOOT();
+            return null;
+        }
+
+        protected void onPreExecute() {
+            //called before doInBackground() is started
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            if (SendEmailOK) {
+                //funciono ok
+
+                // progressDialog.hide();
                 Toast.makeText(MainActivity.this, "Su email se envio correctamente!!", Toast.LENGTH_LONG).show();
 
                 //finish();

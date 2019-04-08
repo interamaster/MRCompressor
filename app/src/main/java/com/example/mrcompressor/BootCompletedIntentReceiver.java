@@ -17,6 +17,10 @@ public class BootCompletedIntentReceiver extends BroadcastReceiver {
             Intent pushIntent = new Intent(context, MainActivity.class);
            //  pushIntent.putExtra(LockService.EXTRA_MESSAGE,"REBOOT");
               pushIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+
+            //y lo ponemos de extra en el intent:
+            pushIntent.putExtra("TEXTORECIBIDO","REBOOT");
             context.startActivity(pushIntent);
 
 

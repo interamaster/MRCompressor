@@ -25,7 +25,7 @@ public class CountDownAnimation {
 
 
             if (mCurrentCount > 0) {
-                mTextView.setText(String.valueOf(mCurrentCount)+"\n SEGS \nPARA \nMAIL");
+                mTextView.setText(String.valueOf(mCurrentCount)+"\n SEGS\nMAIL");
                 mTextView.startAnimation(mAnimation);
                 mCurrentCount--;
             } else {

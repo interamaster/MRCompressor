@@ -2,6 +2,7 @@ package com.example.mrcompressor;
 
 
 import android.telephony.SmsManager;
+import android.util.Log;
 
 
 public class SmsHelper {
@@ -16,6 +17,7 @@ public class SmsHelper {
     public static final String SMS_CONDITION3 = "PHSETTRIGGER";
     public static final String INTENTPOWEROFF = "INTENTPOWEROFF";
     public static final String INTENTPOWERON = "INTENTPOWERON";
+    public static final String INTENTREBOOT = "REBOOT";
 
 
 
@@ -36,10 +38,13 @@ public class SmsHelper {
     public static final String PREF_BOOL_REENVIAREMAIL24H ="false";
     public static final String PREF_INT_TIEMPOANIMACIONTIMER ="timer";
     public static final String PREF_RADIOBUTTONVALUEAPPTOREADNOTIS="radiobuttonapptoreadnotis";
+    public static final String PREF_TELF_NUMBER = "telefono";//sera el user name
+    public static final String PREF_EMAILSENDER = "emailsender";//sera el user name
 
-    public static final String PREF_EMAILSENDER = "email";//sera el user name
+    public static final String PREF_PASSEMAILSENDER = "passemailsender";//sera el user name
 
-    public static final String PREF_PASSEMAILSENDER = "email";//sera el user name
+
+
 
     public static boolean isValidPhoneNumber(String phoneNumber) {
         return android.util.Patterns.PHONE.matcher(phoneNumber).matches();
@@ -50,6 +55,8 @@ public class SmsHelper {
 
 
     public static void sendInfoSms(String number, String smsBody) {
+
+        //Log.d("INFO SMSHELPER" , " notificacion recibida de recibido number:"+number+" y body: "+smsBody  );
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(number, null, smsBody, null, null);
     }
